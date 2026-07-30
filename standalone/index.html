@@ -1,45 +1,712 @@
 <!DOCTYPE html>
-
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TizenTwitch 2.0</title>
     <style>
-        @keyframes indeterminate-bar {
-            0% {
-                left: 0%;
-                width: 0;
-            }
-
-            50% {
-                left: 0%;
-                width: 100%;
-            }
-
-            100% {
-                left: 100%;
-                width: 0;
-            }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        .progress-container {
-            position: relative;
-            width: 300px;
-            height: 4px;
-            margin-top: 40px;
-            background-color: rgba(145, 70, 255, 0.3);
-            border-radius: 2px;
+        body {
+            background: #0e0e10;
+            color: #efeff1;
+            font-family: 'Inter', 'Roobert', 'Helvetica Neue', Helvetica, Arial, sans-serif;
             overflow: hidden;
+            height: 100vh;
+            width: 100vw;
         }
 
-        .progress-bar {
-            position: absolute;
+        /* Loading Screen */
+        #loading-screen {
+            position: fixed;
             top: 0;
             left: 0;
+            width: 100%;
             height: 100%;
-            background-color: #9146ff;
-            animation: indeterminate-bar 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+            background: #0e0e10;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading-logo {
+            font-size: 72px;
+            color: #9146ff;
+            margin-bottom: 30px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(145, 70, 255, 0.3);
+            border-top-color: #9146ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+            margin-top: 20px;
+            color: #efeff1;
+            font-size: 18px;
+        }
+
+        /* Main App Container */
+        #app-container {
+            display: none;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: rgba(14, 14, 16, 0.95);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 100;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #9146ff;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 15px;
+        }
+
+        .header-btn {
+            background: rgba(145, 70, 255, 0.2);
+            border: 1px solid #9146ff;
+            color: #efeff1;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .header-btn:hover, .header-btn:focus {
+            background: #9146ff;
+            outline: none;
+        }
+
+        /* Search Bar */
+        .search-container {
+            flex: 1;
+            max-width: 400px;
+            margin: 0 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #efeff1;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: #9146ff;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-top: 60px;
+            height: calc(100vh - 60px);
+            display: flex;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: rgba(20, 20, 23, 0.95);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px 0;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 20px;
+        }
+
+        .sidebar-title {
+            padding: 0 20px 10px;
+            font-size: 12px;
+            color: #adadb8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-item {
+            padding: 12px 20px;
+            color: #efeff1;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-item:hover, .sidebar-item:focus {
+            background: rgba(145, 70, 255, 0.2);
+            outline: none;
+        }
+
+        .sidebar-item.active {
+            background: rgba(145, 70, 255, 0.3);
+            border-left: 3px solid #9146ff;
+        }
+
+        /* Video Container */
+        .video-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .video-wrapper {
+            flex: 1;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .video-placeholder {
+            text-align: center;
+            color: #adadb8;
+        }
+
+        .video-placeholder-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        /* Chat Container */
+        .chat-container {
+            width: 300px;
+            background: rgba(20, 20, 23, 0.95);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-weight: bold;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .chat-message {
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        .chat-username {
+            color: #9146ff;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .chat-input-container {
+            padding: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #efeff1;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 13px;
+            outline: none;
+        }
+
+        /* Settings Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #18181b;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 30px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #efeff1;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .settings-section {
+            margin-bottom: 25px;
+        }
+
+        .settings-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #adadb8;
+            font-size: 14px;
+        }
+
+        .settings-select, .settings-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #efeff1;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .settings-select:focus, .settings-input:focus {
+            border-color: #9146ff;
+        }
+
+        .settings-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+        }
+
+        .toggle-switch {
+            width: 50px;
+            height: 26px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 13px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: #9146ff;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: #efeff1;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(24px);
+        }
+
+        /* Controls Overlay */
+        .controls-overlay {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(14, 14, 16, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            z-index: 150;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .controls-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .control-btn {
+            background: rgba(145, 70, 255, 0.2);
+            border: 1px solid #9146ff;
+            color: #efeff1;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover, .control-btn:focus {
+            background: #9146ff;
+            transform: scale(1.1);
+            outline: none;
+        }
+
+        /* Volume Slider */
+        .volume-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .volume-slider {
+            width: 100px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            appearance: none;
+            outline: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #9146ff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        /* Help Screen */
+        .help-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0e0e10;
+            z-index: 300;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        .help-screen.active {
+            display: block;
+        }
+
+        .help-title {
+            font-size: 36px;
+            color: #9146ff;
+            margin-bottom: 30px;
+        }
+
+        .help-section {
+            margin-bottom: 30px;
+        }
+
+        .help-section-title {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #efeff1;
+        }
+
+        .help-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .help-key {
+            background: #9146ff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-right: 15px;
+            font-weight: bold;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        .help-description {
+            color: #adadb8;
+        }
+
+        /* Error Screen */
+        .error-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0e0e10;
+            z-index: 400;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .error-screen.active {
+            display: flex;
+        }
+
+        .error-icon {
+            font-size: 80px;
+            color: #ff4f4d;
+            margin-bottom: 20px;
+        }
+
+        .error-message {
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .error-retry {
+            background: #9146ff;
+            border: none;
+            color: #efeff1;
+            padding: 15px 30px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
         }
     </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-logo">📺</div>
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loading-text">Starting TizenTwitch...</div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">TizenTwitch 2.0</div>
+            <div class="search-container">
+                <input type="text" class="search-input" id="search-input" placeholder="Search channels...">
+            </div>
+            <div class="header-controls">
+                <button class="header-btn" id="settings-btn">⚙️ Settings</button>
+                <button class="header-btn" id="help-btn">❓ Help</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Navigation</div>
+                    <div class="sidebar-item active" data-page="home">🏠 Home</div>
+                    <div class="sidebar-item" data-page="browse">🔍 Browse</div>
+                    <div class="sidebar-item" data-page="following">❤️ Following</div>
+                </div>
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Favorites</div>
+                    <div class="sidebar-item" data-channel="fav1">⭐ Favorite 1</div>
+                    <div class="sidebar-item" data-channel="fav2">⭐ Favorite 2</div>
+                </div>
+            </div>
+
+            <!-- Video Container -->
+            <div class="video-container">
+                <div class="video-wrapper">
+                    <div class="video-placeholder" id="video-placeholder">
+                        <div class="video-placeholder-icon">▶️</div>
+                        <div>Select a channel to start watching</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat -->
+            <div class="chat-container">
+                <div class="chat-header">Chat</div>
+                <div class="chat-messages" id="chat-messages">
+                    <div class="chat-message">
+                        <span class="chat-username">System:</span>
+                        <span>Welcome to TizenTwitch 2.0!</span>
+                    </div>
+                </div>
+                <div class="chat-input-container">
+                    <input type="text" class="chat-input" id="chat-input" placeholder="Send a message...">
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Overlay -->
+        <div class="controls-overlay" id="controls-overlay">
+            <button class="control-btn" id="play-pause-btn">⏸️</button>
+            <button class="control-btn" id="prev-btn">⏮️</button>
+            <button class="control-btn" id="next-btn">⏭️</button>
+            <div class="volume-container">
+                <button class="control-btn" id="mute-btn">🔊</button>
+                <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="100">
+            </div>
+            <button class="control-btn" id="fullscreen-btn">⛶</button>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settings-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Settings</div>
+                <button class="modal-close" id="settings-close">×</button>
+            </div>
+            <div class="settings-section">
+                <label class="settings-label">Video Quality</label>
+                <select class="settings-select" id="quality-select">
+                    <option value="auto">Auto</option>
+                    <option value="1080p">1080p</option>
+                    <option value="720p">720p</option>
+                    <option value="480p">480p</option>
+                    <option value="360p">360p</option>
+                </select>
+            </div>
+            <div class="settings-section">
+                <label class="settings-label">Chat</label>
+                <div class="settings-toggle">
+                    <span>Show Chat</span>
+                    <div class="toggle-switch active" id="chat-toggle"></div>
+                </div>
+            </div>
+            <div class="settings-section">
+                <label class="settings-label">Performance</label>
+                <div class="settings-toggle">
+                    <span>Hardware Acceleration</span>
+                    <div class="toggle-switch active" id="hw-accel-toggle"></div>
+                </div>
+            </div>
+            <div class="settings-section">
+                <label class="settings-label">Audio</label>
+                <div class="settings-toggle">
+                    <span>Auto-Play Next</span>
+                    <div class="toggle-switch" id="autoplay-toggle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Screen -->
+    <div class="help-screen" id="help-screen">
+        <div class="help-title">Keyboard Controls</div>
+        <div class="help-section">
+            <div class="help-section-title">Playback</div>
+            <div class="help-item">
+                <div class="help-key">Play/Pause</div>
+                <div class="help-description">MediaPlayPause or Space</div>
+            </div>
+            <div class="help-item">
+                <div class="help-key">Stop</div>
+                <div class="help-description">MediaStop</div>
+            </div>
+            <div class="help-item">
+                <div class="help-key">Seek</div>
+                <div class="help-description">MediaFastForward / MediaRewind</div>
+            </div>
+        </div>
+        <div class="help-section">
+            <div class="help-section-title">Navigation</div>
+            <div class="help-item">
+                <div class="help-key">Settings</div>
+                <div class="help-description">ColorF0Red (Red Button)</div>
+            </div>
+            <div class="help-item">
+                <div class="help-key">Help</div>
+                <div class="help-description">ColorF1Green (Green Button)</div>
+            </div>
+            <div class="help-item">
+                <div class="help-key">Exit</div>
+                <div class="help-description">Back Button</div>
+            </div>
+        </div>
+        <button class="header-btn" id="help-close" style="margin-top: 20px;">Close Help</button>
+    </div>
+
+    <!-- Error Screen -->
+    <div class="error-screen" id="error-screen">
+        <div class="error-icon">⚠️</div>
+        <div class="error-message" id="error-message">Connection Error</div>
+        <button class="error-retry" id="error-retry">Retry</button>
+    </div>
+
     <script>
         "use strict";
+
+        // Tizen key registration
         tizen.tvinputdevice.registerKey("ColorF0Red");
         tizen.tvinputdevice.registerKey("ColorF1Green");
         tizen.tvinputdevice.registerKey("ColorF2Yellow");
@@ -60,43 +727,300 @@
             tizen.tvinputdevice.registerKey(keys[i]);
         }
 
-        const pkgId = tizen.application.getCurrentApplication().appInfo.packageId;
-        const serviceId = pkgId + ".StandaloneService";
+        // App State
+        const state = {
+            settings: {
+                quality: 'auto',
+                showChat: true,
+                hwAcceleration: true,
+                autoPlay: false
+            },
+            currentChannel: null,
+            isPlaying: false,
+            volume: 100,
+            isMuted: false
+        };
 
-        function useProxy() {
+        // Load settings from local storage
+        function loadSettings() {
+            try {
+                const saved = localStorage.getItem('tizentwitch_settings');
+                if (saved) {
+                    Object.assign(state.settings, JSON.parse(saved));
+                }
+            } catch (e) {
+                console.error('Failed to load settings:', e);
+            }
+        }
+
+        // Save settings to local storage
+        function saveSettings() {
+            try {
+                localStorage.setItem('tizentwitch_settings', JSON.stringify(state.settings));
+            } catch (e) {
+                console.error('Failed to save settings:', e);
+            }
+        }
+
+        // Initialize app
+        function initApp() {
+            loadSettings();
+            setupEventListeners();
+            applySettings();
+            launchService();
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Settings modal
+            document.getElementById('settings-btn').addEventListener('click', () => {
+                document.getElementById('settings-modal').classList.add('active');
+            });
+
+            document.getElementById('settings-close').addEventListener('click', () => {
+                document.getElementById('settings-modal').classList.remove('active');
+            });
+
+            // Help screen
+            document.getElementById('help-btn').addEventListener('click', () => {
+                document.getElementById('help-screen').classList.add('active');
+            });
+
+            document.getElementById('help-close').addEventListener('click', () => {
+                document.getElementById('help-screen').classList.remove('active');
+            });
+
+            // Settings toggles
+            document.getElementById('chat-toggle').addEventListener('click', function() {
+                this.classList.toggle('active');
+                state.settings.showChat = this.classList.contains('active');
+                saveSettings();
+                applySettings();
+            });
+
+            document.getElementById('hw-accel-toggle').addEventListener('click', function() {
+                this.classList.toggle('active');
+                state.settings.hwAcceleration = this.classList.contains('active');
+                saveSettings();
+            });
+
+            document.getElementById('autoplay-toggle').addEventListener('click', function() {
+                this.classList.toggle('active');
+                state.settings.autoPlay = this.classList.contains('active');
+                saveSettings();
+            });
+
+            // Quality select
+            document.getElementById('quality-select').addEventListener('change', function() {
+                state.settings.quality = this.value;
+                saveSettings();
+            });
+
+            // Control buttons
+            document.getElementById('play-pause-btn').addEventListener('click', togglePlayPause);
+            document.getElementById('mute-btn').addEventListener('click', toggleMute);
+            document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
+
+            // Volume slider
+            document.getElementById('volume-slider').addEventListener('input', function() {
+                state.volume = this.value;
+                if (state.volume > 0) {
+                    state.isMuted = false;
+                }
+            });
+
+            // Sidebar navigation
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    const channel = this.dataset.channel;
+                    if (channel) {
+                        loadChannel(channel);
+                    }
+                });
+            });
+
+            // Search
+            document.getElementById('search-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchChannel(this.value);
+                }
+            });
+
+            // Error retry
+            document.getElementById('error-retry').addEventListener('click', retryConnection);
+
+            // Keyboard controls
+            document.addEventListener('keydown', handleKeyPress);
+        }
+
+        // Apply settings to UI
+        function applySettings() {
+            document.getElementById('quality-select').value = state.settings.quality;
+            
+            document.getElementById('chat-toggle').classList.toggle('active', state.settings.showChat);
+            document.querySelector('.chat-container').style.display = state.settings.showChat ? 'flex' : 'none';
+            
+            document.getElementById('hw-accel-toggle').classList.toggle('active', state.settings.hwAcceleration);
+            document.getElementById('autoplay-toggle').classList.toggle('active', state.settings.autoPlay);
+        }
+
+        // Launch proxy service
+        function launchService() {
+            const pkgId = tizen.application.getCurrentApplication().appInfo.packageId;
+            const serviceId = pkgId + ".StandaloneService";
+
+            document.getElementById('loading-text').textContent = 'Starting service...';
+
+            tizen.application.launchAppControl(
+                new tizen.ApplicationControl("http://tizen.org/appcontrol/operation/service"),
+                serviceId,
+                function () {
+                    setTimeout(() => connectToProxy(), 1000);
+                },
+                function (e) {
+                    console.error("Launch Service failed:", e);
+                    showError('Failed to start service: ' + e.message);
+                }
+            );
+        }
+
+        // Connect to proxy
+        function connectToProxy() {
+            document.getElementById('loading-text').textContent = 'Connecting to proxy...';
+            
             fetch('http://localhost:8099/tizentwitch/getState')
                 .then(r => r.json())
                 .then(res => {
-                    location.href = 'http://localhost:8099/';
+                    document.getElementById('loading-screen').style.display = 'none';
+                    document.getElementById('app-container').style.display = 'block';
+                    showControls();
                 }).catch((err) => {
                     console.error('Failed to connect to proxy service:', err);
-                    setTimeout(() => window.location.reload(), 2000);
+                    setTimeout(() => connectToProxy(), 2000);
                 });
         }
 
-        tizen.application.launchAppControl(
-            new tizen.ApplicationControl("http://tizen.org/appcontrol/operation/service"),
-            serviceId,
-            function () {
-                setTimeout(() => useProxy(), 1000);
-            },
-            function (e) {
-                console.error("Launch Service failed:", e);
-                alert("Launch Service failed: " + e.message);
+        // Handle key press
+        function handleKeyPress(e) {
+            switch(e.key) {
+                case 'MediaPlayPause':
+                case ' ':
+                    togglePlayPause();
+                    break;
+                case 'MediaStop':
+                    stopPlayback();
+                    break;
+                case 'MediaFastForward':
+                    seekForward();
+                    break;
+                case 'MediaRewind':
+                    seekBackward();
+                    break;
+                case 'MediaTrackNext':
+                    nextChannel();
+                    break;
+                case 'MediaTrackPrevious':
+                    previousChannel();
+                    break;
+                case 'ColorF0Red':
+                    document.getElementById('settings-modal').classList.add('active');
+                    break;
+                case 'ColorF1Green':
+                    document.getElementById('help-screen').classList.add('active');
+                    break;
+                case 'Back':
+                    hideModals();
+                    break;
             }
-        );
+        }
+
+        // Playback controls
+        function togglePlayPause() {
+            state.isPlaying = !state.isPlaying;
+            document.getElementById('play-pause-btn').textContent = state.isPlaying ? '⏸️' : '▶️';
+        }
+
+        function stopPlayback() {
+            state.isPlaying = false;
+            document.getElementById('play-pause-btn').textContent = '▶️';
+        }
+
+        function toggleMute() {
+            state.isMuted = !state.isMuted;
+            document.getElementById('mute-btn').textContent = state.isMuted ? '🔇' : '🔊';
+        }
+
+        function toggleFullscreen() {
+            // Fullscreen handling
+        }
+
+        function seekForward() {
+            console.log('Seek forward');
+        }
+
+        function seekBackward() {
+            console.log('Seek backward');
+        }
+
+        function nextChannel() {
+            console.log('Next channel');
+        }
+
+        function previousChannel() {
+            console.log('Previous channel');
+        }
+
+        // Channel functions
+        function loadChannel(channel) {
+            state.currentChannel = channel;
+            document.getElementById('video-placeholder').innerHTML = `
+                <div class="video-placeholder-icon">📺</div>
+                <div>Now playing: ${channel}</div>
+            `;
+            state.isPlaying = true;
+            document.getElementById('play-pause-btn').textContent = '⏸️';
+        }
+
+        function searchChannel(query) {
+            console.log('Searching for:', query);
+        }
+
+        // UI functions
+        function showControls() {
+            document.getElementById('controls-overlay').classList.add('active');
+            setTimeout(() => {
+                document.getElementById('controls-overlay').classList.remove('active');
+            }, 3000);
+        }
+
+        function hideModals() {
+            document.getElementById('settings-modal').classList.remove('active');
+            document.getElementById('help-screen').classList.remove('active');
+        }
+
+        function showError(message) {
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error-screen').classList.add('active');
+        }
+
+        function retryConnection() {
+            document.getElementById('error-screen').classList.remove('active');
+            connectToProxy();
+        }
+
+        // Auto-restart on crash
+        window.addEventListener('error', function(e) {
+            console.error('App error:', e);
+            setTimeout(() => {
+                window.location.reload();
+            }, 5000);
+        });
+
+        // Start app
+        initApp();
     </script>
-</head>
-
-<body
-    style="background-color: #0e0e10; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; margin: 0;">
-    <h1
-        style="color: #9146ff; font-size: 80px; font-family: Roboto,Noto Sans CJK ZH-HK,Noto Sans Thai,Arial,Helvetica,sans-serif; margin: 0;">
-        TizenTwitch
-    </h1>
-    <div class="progress-container">
-        <div class="progress-bar"></div>
-    </div>
 </body>
-
 </html>
