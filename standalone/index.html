@@ -1,56 +1,98 @@
 <!DOCTYPE html>
-<html>
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TizenTwitch</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        @keyframes indeterminate-bar {
+            0% {
+                left: 0%;
+                width: 0;
+            }
+
+            50% {
+                left: 0%;
+                width: 100%;
+            }
+
+            100% {
+                left: 100%;
+                width: 0;
+            }
         }
-        
-        body {
-            background: #0e0e10;
+
+        .progress-container {
+            position: relative;
+            width: 300px;
+            height: 4px;
+            margin-top: 40px;
+            background-color: rgba(145, 70, 255, 0.3);
+            border-radius: 2px;
             overflow: hidden;
         }
-        
-        #twitch-player {
-            width: 100vw;
-            height: 100vh;
-            border: none;
-        }
-        
-        #loading {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #9146ff;
-            font-size: 24px;
-            font-family: Arial, sans-serif;
+
+        .progress-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background-color: #9146ff;
+            animation: indeterminate-bar 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         }
     </style>
-</head>
-<body>
-    <div id="loading">Loading Twitch...</div>
-    <iframe id="twitch-player" src="https://www.twitch.tv" style="display: none;"></iframe>
-    
     <script>
-        const iframe = document.getElementById('twitch-player');
-        const loading = document.getElementById('loading');
-        
-        iframe.onload = function() {
-            loading.style.display = 'none';
-            iframe.style.display = 'block';
-        };
-        
-        // Fallback timeout
-        setTimeout(() => {
-            loading.style.display = 'none';
-            iframe.style.display = 'block';
-        }, 5000);
+        "use strict";
+        tizen.tvinputdevice.registerKey("ColorF0Red");
+        tizen.tvinputdevice.registerKey("ColorF1Green");
+        tizen.tvinputdevice.registerKey("ColorF2Yellow");
+        tizen.tvinputdevice.registerKey("ColorF3Blue");
+
+        const keys = [
+            "MediaPlayPause",
+            "MediaPlay",
+            "MediaPause",
+            "MediaStop",
+            "MediaFastForward",
+            "MediaRewind",
+            "MediaTrackNext",
+            "MediaTrackPrevious"
+        ];
+
+        for (let i = 0; i < keys.length; i++) {
+            tizen.tvinputdevice.registerKey(keys[i]);
+        }
+
+        const pkgId = tizen.application.getCurrentApplication().appInfo.packageId;
+        const serviceId = pkgId + ".StandaloneService";
+
+        function useProxy() {
+            fetch('http://localhost:8099/tizentwitch/getState')
+                .then(r => r.json())
+                .then(res => {
+                    location.href = 'http://localhost:8099/';
+                }).catch(() => window.location.reload());
+        }
+
+        tizen.application.launchAppControl(
+            new tizen.ApplicationControl("http://tizen.org/appcontrol/operation/service"),
+            serviceId,
+            function () {
+                useProxy();
+            },
+            function (e) {
+                alert("Launch Service failed: " + e.message);
+            }
+        );
     </script>
+</head>
+
+<body
+    style="background-color: #0e0e10; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; margin: 0;">
+    <h1
+        style="color: #9146ff; font-size: 80px; font-family: Roboto,Noto Sans CJK ZH-HK,Noto Sans Thai,Arial,Helvetica,sans-serif; margin: 0;">
+        TizenTwitch
+    </h1>
+    <div class="progress-container">
+        <div class="progress-bar"></div>
+    </div>
 </body>
+
 </html>
