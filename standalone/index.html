@@ -611,8 +611,8 @@
             <div class="settings-section">
                 <label class="settings-label">Chat</label>
                 <div class="settings-toggle">
-                    <span>Show Chat</span>
-                    <div class="toggle-switch active" id="chat-toggle"></div>
+                    <span>Show Chat (Disabled in simplified UI)</span>
+                    <div class="toggle-switch" id="chat-toggle"></div>
                 </div>
             </div>
             <div class="settings-section">
@@ -801,18 +801,7 @@
                 }
             });
 
-            // Sidebar navigation
-            document.querySelectorAll('.sidebar-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    const channel = this.dataset.channel;
-                    if (channel) {
-                        loadChannel(channel);
-                    }
-                });
-            });
+            // Sidebar navigation removed - not used in simplified UI
 
             // Search
             document.getElementById('search-input').addEventListener('keypress', function(e) {
@@ -832,8 +821,8 @@
         function applySettings() {
             document.getElementById('quality-select').value = state.settings.quality;
             
-            document.getElementById('chat-toggle').classList.toggle('active', state.settings.showChat);
-            document.querySelector('.chat-container').style.display = state.settings.showChat ? 'flex' : 'none';
+            // Chat toggle disabled - chat removed from simplified UI
+            document.getElementById('chat-toggle').classList.toggle('active', false);
             
             document.getElementById('hw-accel-toggle').classList.toggle('active', state.settings.hwAcceleration);
             document.getElementById('autoplay-toggle').classList.toggle('active', state.settings.autoPlay);
