@@ -1,0 +1,25 @@
+{
+  "name": "@dskja/tizentwitch",
+  "appName": "TizenTwitch",
+  "version": "1.0.0",
+  "description": "TizenTwitch is an ad-free Twitch viewer for Tizen (Samsung) TVs with chat support.",
+  "packageType": "mods",
+  "websiteURL": "https://www.twitch.tv",
+  "main": "dist/userScript.js",
+  "author": "dskja",
+  "serviceFile": "dist/service.js",
+  "keys": [
+    "MediaPlayPause",
+    "MediaPlay",
+    "MediaPause",
+    "MediaStop",
+    "MediaFastForward",
+    "MediaRewind",
+    "MediaTrackNext",
+    "MediaTrackPrevious"
+  ],
+  "repository": {
+    "url": "https://github.com/dskja/TizenBrew-Twitch"
+  },
+  "license": "GPL-3.0-only"
+}

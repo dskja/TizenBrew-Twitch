@@ -1,0 +1,7 @@
+import "./features/adblock.js";
+import "./features/chat.js";
+import "./ui/chat.js";
+import "./ui/theme.js";
+import "whatwg-fetch";
+import "core-js/proposals/object-getownpropertydescriptors";
+import "./domrect-polyfill";
