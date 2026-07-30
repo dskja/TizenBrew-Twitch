@@ -710,7 +710,9 @@
             currentChannel: null,
             isPlaying: false,
             volume: 100,
-            isMuted: false
+            isMuted: false,
+            retryCount: 0,
+            maxRetries: 10
         };
 
         // Load settings from local storage
@@ -852,9 +854,17 @@
         function connectToProxy() {
             document.getElementById('loading-text').textContent = 'Connecting to proxy...';
             
+            if (state.retryCount >= state.maxRetries) {
+                showError('Failed to connect after multiple attempts. Please restart the app.');
+                return;
+            }
+            
+            state.retryCount++;
+            
             fetch('http://localhost:8099/tizentwitch/getState')
                 .then(r => r.json())
                 .then(res => {
+                    state.retryCount = 0; // Reset on success
                     document.getElementById('loading-screen').style.display = 'none';
                     document.getElementById('app-container').style.display = 'block';
                     
@@ -863,6 +873,7 @@
                     showControls();
                 }).catch((err) => {
                     console.error('Failed to connect to proxy service:', err);
+                    document.getElementById('loading-text').textContent = `Retrying (${state.retryCount}/${state.maxRetries})...`;
                     setTimeout(() => connectToProxy(), 2000);
                 });
         }
@@ -876,13 +887,23 @@
             iframe.style.display = 'block';
             placeholder.style.display = 'none';
             
+            // Add loading timeout (30 seconds)
+            const loadTimeout = setTimeout(() => {
+                console.warn('Twitch loading timeout');
+                placeholder.style.display = 'block';
+                placeholder.innerHTML = '<div class="video-placeholder-icon">⏱️</div><div>Loading timeout. Please refresh.</div>';
+            }, 30000);
+            
             iframe.onload = function() {
+                clearTimeout(loadTimeout);
                 console.log('Twitch loaded successfully');
             };
             
             iframe.onerror = function() {
+                clearTimeout(loadTimeout);
                 console.error('Failed to load Twitch');
                 placeholder.style.display = 'block';
+                placeholder.innerHTML = '<div class="video-placeholder-icon">❌</div><div>Failed to load Twitch</div>';
                 iframe.style.display = 'none';
             };
         }

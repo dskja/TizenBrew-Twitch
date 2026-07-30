@@ -1,8 +1,8 @@
 {
   "name": "tizentwitch",
   "appName": "TizenTwitch",
-  "version": "2.0.2",
-  "description": "TizenTwitch 2.0.2 - Bug fixes and stability improvements for Tizen (Samsung) TVs.",
+  "version": "2.0.3",
+  "description": "TizenTwitch 2.0.3 - Performance improvements and better error handling for Tizen (Samsung) TVs.",
   "packageType": "mods",
   "websiteURL": "https://www.twitch.tv",
   "main": "dist/userScript.js",
