@@ -1,8 +1,8 @@
 {
   "name": "tizentwitch",
   "appName": "TizenTwitch",
-  "version": "2.0.0",
-  "description": "TizenTwitch 2.0 - Next generation Twitch viewer for Tizen (Samsung) TVs with modern UI, full controls, and advanced features.",
+  "version": "2.0.1",
+  "description": "TizenTwitch 2.0.1 - Fully functional Twitch viewer for Tizen (Samsung) TVs with proxy integration and simplified UI.",
   "packageType": "mods",
   "websiteURL": "https://www.twitch.tv",
   "main": "dist/userScript.js",

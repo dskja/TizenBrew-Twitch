@@ -566,42 +566,14 @@
 
         <!-- Main Content -->
         <div class="main-content">
-            <!-- Sidebar -->
-            <div class="sidebar">
-                <div class="sidebar-section">
-                    <div class="sidebar-title">Navigation</div>
-                    <div class="sidebar-item active" data-page="home">🏠 Home</div>
-                    <div class="sidebar-item" data-page="browse">🔍 Browse</div>
-                    <div class="sidebar-item" data-page="following">❤️ Following</div>
-                </div>
-                <div class="sidebar-section">
-                    <div class="sidebar-title">Favorites</div>
-                    <div class="sidebar-item" data-channel="fav1">⭐ Favorite 1</div>
-                    <div class="sidebar-item" data-channel="fav2">⭐ Favorite 2</div>
-                </div>
-            </div>
-
-            <!-- Video Container -->
-            <div class="video-container">
+            <!-- Video Container (Full Width) -->
+            <div class="video-container" style="width: 100%;">
                 <div class="video-wrapper">
+                    <iframe id="twitch-iframe" src="" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
                     <div class="video-placeholder" id="video-placeholder">
                         <div class="video-placeholder-icon">▶️</div>
-                        <div>Select a channel to start watching</div>
+                        <div>Loading Twitch...</div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Chat -->
-            <div class="chat-container">
-                <div class="chat-header">Chat</div>
-                <div class="chat-messages" id="chat-messages">
-                    <div class="chat-message">
-                        <span class="chat-username">System:</span>
-                        <span>Welcome to TizenTwitch 2.0!</span>
-                    </div>
-                </div>
-                <div class="chat-input-container">
-                    <input type="text" class="chat-input" id="chat-input" placeholder="Send a message...">
                 </div>
             </div>
         </div>
@@ -896,11 +868,34 @@
                 .then(res => {
                     document.getElementById('loading-screen').style.display = 'none';
                     document.getElementById('app-container').style.display = 'block';
+                    
+                    // Load Twitch through proxy
+                    loadTwitch();
                     showControls();
                 }).catch((err) => {
                     console.error('Failed to connect to proxy service:', err);
                     setTimeout(() => connectToProxy(), 2000);
                 });
+        }
+
+        // Load Twitch through proxy
+        function loadTwitch() {
+            const iframe = document.getElementById('twitch-iframe');
+            const placeholder = document.getElementById('video-placeholder');
+            
+            iframe.src = 'http://localhost:8099/';
+            iframe.style.display = 'block';
+            placeholder.style.display = 'none';
+            
+            iframe.onload = function() {
+                console.log('Twitch loaded successfully');
+            };
+            
+            iframe.onerror = function() {
+                console.error('Failed to load Twitch');
+                placeholder.style.display = 'block';
+                iframe.style.display = 'none';
+            };
         }
 
         // Handle key press
@@ -976,16 +971,18 @@
         // Channel functions
         function loadChannel(channel) {
             state.currentChannel = channel;
-            document.getElementById('video-placeholder').innerHTML = `
-                <div class="video-placeholder-icon">📺</div>
-                <div>Now playing: ${channel}</div>
-            `;
+            const iframe = document.getElementById('twitch-iframe');
+            
+            // Load specific channel through proxy
+            iframe.src = `http://localhost:8099/${channel}`;
             state.isPlaying = true;
             document.getElementById('play-pause-btn').textContent = '⏸️';
         }
 
         function searchChannel(query) {
-            console.log('Searching for:', query);
+            if (query) {
+                loadChannel(query);
+            }
         }
 
         // UI functions
