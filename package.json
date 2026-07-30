@@ -1,13 +1,14 @@
 {
-  "name": "@dskja/tizentwitch",
+  "name": "tizentwitch",
   "appName": "TizenTwitch",
-  "version": "1.0.0",
-  "description": "TizenTwitch is an ad-free Twitch viewer for Tizen (Samsung) TVs with chat support.",
+  "version": "1.0.4",
+  "description": "TizenTwitch is a standalone Twitch viewer for Tizen (Samsung) TVs with WebView support.",
   "packageType": "mods",
   "websiteURL": "https://www.twitch.tv",
   "main": "dist/userScript.js",
+  "standalone": "standalone/index.html",
   "author": "dskja",
-  "serviceFile": "dist/service.js",
+  "serviceFile": "standalone/service/index.js",
   "keys": [
     "MediaPlayPause",
     "MediaPlay",
