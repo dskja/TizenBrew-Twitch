@@ -6,9 +6,11 @@ const express = require('express');
 const app = express();
 const PORT = 8099;
 const fetch = require('node-fetch');
-const http = require('http');
-const https = require('https');
-const URL = require('url');
+const { URL } = require('url');
+
+// Body parsing middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -29,10 +31,10 @@ app.all('*', (req, res) => {
 
     let targetUrl;
     if (isCorsBypass) {
-        const rawTarget = req.url.substring('/cors-bypass/'.length);
+        const rawTarget = req.path.substring('/cors-bypass/'.length);
         targetUrl = rawTarget.indexOf('http') === 0 ? rawTarget : `https://${rawTarget}`;
     } else {
-        targetUrl = `https://www.twitch.tv${req.url}`;
+        targetUrl = `https://www.twitch.tv${req.path}`;
     }
 
     const headers = {};
@@ -49,7 +51,7 @@ app.all('*', (req, res) => {
     }
 
     try {
-        const parsedUrl = URL.parse(targetUrl);
+        const parsedUrl = new URL(targetUrl);
         headers['host'] = parsedUrl.host;
     } catch (e) {
         headers['host'] = isCorsBypass ? 'www.twitch.tv' : 'www.twitch.tv';
@@ -66,7 +68,7 @@ app.all('*', (req, res) => {
     const fetchOptions = {
         method: req.method,
         headers: headers,
-        body: hasBody ? req : undefined,
+        body: hasBody ? JSON.stringify(req.body) : undefined,
         redirect: 'manual'
     };
 

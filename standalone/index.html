@@ -68,16 +68,20 @@
                 .then(r => r.json())
                 .then(res => {
                     location.href = 'http://localhost:8099/';
-                }).catch(() => window.location.reload());
+                }).catch((err) => {
+                    console.error('Failed to connect to proxy service:', err);
+                    setTimeout(() => window.location.reload(), 2000);
+                });
         }
 
         tizen.application.launchAppControl(
             new tizen.ApplicationControl("http://tizen.org/appcontrol/operation/service"),
             serviceId,
             function () {
-                useProxy();
+                setTimeout(() => useProxy(), 1000);
             },
             function (e) {
+                console.error("Launch Service failed:", e);
                 alert("Launch Service failed: " + e.message);
             }
         );
