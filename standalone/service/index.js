@@ -8,6 +8,35 @@ const PORT = 8099;
 const fetch = require('node-fetch');
 const { URL } = require('url');
 
+// Simple in-memory cache
+const cache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCacheKey(url) {
+    return url;
+}
+
+function getCached(url) {
+    const key = getCacheKey(url);
+    const cached = cache.get(key);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        return cached.data;
+    }
+    cache.delete(key);
+    return null;
+}
+
+function setCached(url, data) {
+    const key = getCacheKey(url);
+    cache.set(key, { data, timestamp: Date.now() });
+    
+    // Limit cache size
+    if (cache.size > 1000) {
+        const oldestKey = cache.keys().next().value;
+        cache.delete(oldestKey);
+    }
+}
+
 // Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -35,6 +64,15 @@ app.all('*', (req, res) => {
         targetUrl = rawTarget.indexOf('http') === 0 ? rawTarget : `https://${rawTarget}`;
     } else {
         targetUrl = `https://www.twitch.tv${req.path}`;
+    }
+
+    // Check cache for GET requests to static assets
+    if (req.method === 'GET' && (targetUrl.includes('.js') || targetUrl.includes('.css') || targetUrl.includes('.png') || targetUrl.includes('.jpg') || targetUrl.includes('.svg'))) {
+        const cached = getCached(targetUrl);
+        if (cached) {
+            res.setHeader('X-Cache', 'HIT');
+            return res.send(cached);
+        }
     }
 
     const headers = {};
@@ -124,22 +162,40 @@ app.all('*', (req, res) => {
                 return response.text().then((text) => {
                     const proxyPrefix = `http://localhost:${PORT}/cors-bypass/`;
 
-                    // Rewrite rules for Twitch domains
-                    text = text.replace(/https:\/\/static\.twitchcdn\.net/g, `${proxyPrefix}https://static.twitchcdn.net`);
-                    text = text.replace(/https:\/\/player\.twitchcdn\.net/g, `${proxyPrefix}https://player.twitchcdn.net`);
-                    text = text.replace(/https:\/\/usher\.twitchcdn\.net/g, `${proxyPrefix}https://usher.twitchcdn.net`);
-                    text = text.replace(/https:\/\/video-weaver\.twitchcdn\.net/g, `${proxyPrefix}https://video-weaver.twitchcdn.net`);
-                    text = text.replace(/https:\/\/gql\.twitchcdn\.net/g, `${proxyPrefix}https://gql.twitchcdn.net`);
-                    text = text.replace(/https:\/\/passport\.twitchcdn\.net/g, `${proxyPrefix}https://passport.twitchcdn.net`);
+                    // Optimized URL rewriting with single pass
+                    const domainReplacements = [
+                        ['static.twitchcdn.net', 'static.twitchcdn.net'],
+                        ['player.twitchcdn.net', 'player.twitchcdn.net'],
+                        ['usher.twitchcdn.net', 'usher.twitchcdn.net'],
+                        ['video-weaver.twitchcdn.net', 'video-weaver.twitchcdn.net'],
+                        ['gql.twitchcdn.net', 'gql.twitchcdn.net'],
+                        ['passport.twitchcdn.net', 'passport.twitchcdn.net']
+                    ];
+
+                    for (const [domain, replacement] of domainReplacements) {
+                        text = text.replace(new RegExp(`https://${domain}`, 'g'), `${proxyPrefix}https://${replacement}`);
+                    }
 
                     // Fix location references
                     text = text.replace(/=window\.location\.href;/g, '=window.location.href.replace("http://localhost:8099", "https://www.twitch.tv");');
                     text = text.replace(/=document\.location\.href/g, '=document.location.href.replace("http://localhost:8099", "https://www.twitch.tv")');
 
+                    // Cache static assets
+                    if (req.method === 'GET' && (targetUrl.includes('.js') || targetUrl.includes('.css'))) {
+                        setCached(targetUrl, text);
+                        res.setHeader('X-Cache', 'MISS');
+                    }
+
                     res.send(text);
                 });
             } else {
+                // Video streaming optimizations - pipe directly for better performance
                 if (response.body) {
+                    // Add streaming headers for video content
+                    if (contentType.includes('video') || contentType.includes('stream')) {
+                        res.setHeader('Cache-Control', 'no-cache');
+                        res.setHeader('Connection', 'keep-alive');
+                    }
                     response.body.pipe(res);
                 } else {
                     res.end();
@@ -149,8 +205,40 @@ app.all('*', (req, res) => {
         .catch((error) => {
             console.error(`Proxy Error for [${targetUrl}]: ${error}`);
             console.error(error.stack)
+            
+            // Improved error recovery
             if (!res.headersSent) {
-                res.status(500).send('Proxy Connection Broken');
+                if (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET') {
+                    // Retry on network errors
+                    console.log(`Retrying request to ${targetUrl}`);
+                    setTimeout(() => {
+                        fetch(targetUrl, fetchOptions)
+                            .then(response => {
+                                res.status(response.status);
+                                const headerKeys = response.headers.raw();
+                                for (const key in headerKeys) {
+                                    if (Object.prototype.hasOwnProperty.call(headerKeys, key)) {
+                                        const lowerKey = key.toLowerCase();
+                                        const skipHeaders = ['content-encoding', 'content-length', 'transfer-encoding', 'content-security-policy', 'alt-svc'];
+                                        if (isCorsBypass) skipHeaders.push('access-control-allow-origin');
+                                        if (skipHeaders.indexOf(lowerKey) !== -1) continue;
+                                        res.setHeader(key, response.headers.get(key));
+                                    }
+                                }
+                                res.setHeader('Access-Control-Allow-Origin', '*');
+                                if (response.body) {
+                                    response.body.pipe(res);
+                                } else {
+                                    res.end();
+                                }
+                            })
+                            .catch(() => {
+                                res.status(503).send('Service Unavailable');
+                            });
+                    }, 1000);
+                } else {
+                    res.status(500).send('Proxy Connection Broken');
+                }
             }
         });
 });

@@ -1,7 +1,7 @@
 {
   "name": "tizentwitch",
   "appName": "TizenTwitch",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "TizenTwitch is a standalone Twitch viewer for Tizen (Samsung) TVs with WebView support.",
   "packageType": "mods",
   "websiteURL": "https://www.twitch.tv",
