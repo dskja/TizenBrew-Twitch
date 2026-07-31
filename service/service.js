@@ -27,7 +27,7 @@ function setCached(url, data) {
 }
 
 app.use(cors({
-    origin: '*',
+    origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
     optionsSuccessStatus: 204
@@ -77,6 +77,7 @@ app.all('*', (req, res) => {
     }
 
     headers['origin'] = 'https://www.twitch.tv';
+    headers['accept-encoding'] = 'identity';
     if (headers['referer']) {
         headers['referer'] = 'https://www.twitch.tv';
     }
@@ -183,11 +184,87 @@ app.all('*', (req, res) => {
         .catch(error => {
             console.error(`Proxy Error [${targetUrl}]: ${error}`);
             if (!res.headersSent) {
-                res.status(502).send('Proxy Error');
+                if (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET') {
+                    var retryCount = (req._retryCount || 0) + 1;
+                    req._retryCount = retryCount;
+                    if (retryCount <= 3) {
+                        console.log(`Retrying request to ${targetUrl} (attempt ${retryCount}/3)`);
+                        setTimeout(function() {
+                            fetch(targetUrl, fetchOptions)
+                                .then(function(response) {
+                                    res.status(response.status);
+                                    var headerKeys = response.headers.raw();
+                                    for (var key in headerKeys) {
+                                        if (Object.prototype.hasOwnProperty.call(headerKeys, key)) {
+                                            var lowerKey = key.toLowerCase();
+                                            var skipHeaders = ['content-encoding', 'content-length', 'transfer-encoding', 'content-security-policy', 'alt-svc'];
+                                            if (req.url.indexOf('/cors-bypass/') === 0) skipHeaders.push('access-control-allow-origin');
+                                            if (skipHeaders.indexOf(lowerKey) !== -1) continue;
+                                            if (lowerKey === 'set-cookie') {
+                                                var rawCookies = headerKeys[key];
+                                                if (Array.isArray(rawCookies)) {
+                                                    var modifiedCookies = rawCookies.map(function(c) { return c
+                                                        .replace(/^__Secure-/i, '__LocalSecure-')
+                                                        .replace(/^__Host-/i, '__LocalHost-')
+                                                        .replace(/Domain=[^;]+/i, 'Domain=localhost')
+                                                        .replace(/;\s*Secure/i, '')
+                                                        .replace(/;\s*SameSite=None/i, ''); });
+                                                    res.setHeader('Set-Cookie', modifiedCookies);
+                                                    continue;
+                                                }
+                                            }
+                                            res.setHeader(key, response.headers.get(key));
+                                        }
+                                    }
+                                    res.setHeader('Access-Control-Allow-Origin', '*');
+                                    var respContentType = response.headers.get('content-type') || '';
+                                    if (respContentType.indexOf('text/html') !== -1 ||
+                                        respContentType.indexOf('application/json') !== -1 ||
+                                        respContentType.indexOf('javascript') !== -1 ||
+                                        respContentType.indexOf('text/css') !== -1) {
+                                        return response.text().then(function(text) {
+                                            var proxyPrefix = 'http://localhost:' + PORT + '/cors-bypass/';
+                                            var domainsToRewrite = [
+                                                'static.twitchcdn.net',
+                                                'player.twitchcdn.net',
+                                                'usher.twitchcdn.net',
+                                                'video-weaver.twitchcdn.net',
+                                                'gql.twitchcdn.net',
+                                                'passport.twitchcdn.net'
+                                            ];
+                                            for (var i = 0; i < domainsToRewrite.length; i++) {
+                                                text = text.replace(new RegExp('https://' + domainsToRewrite[i], 'g'), proxyPrefix + 'https://' + domainsToRewrite[i]);
+                                            }
+                                            text = text.replace(/=window\.location\.href;/g, '=window.location.href.replace("http://localhost:8099", "https://www.twitch.tv");');
+                                            text = text.replace(/=document\.location\.href/g, '=document.location.href.replace("http://localhost:8099", "https://www.twitch.tv")');
+                                            res.send(text);
+                                        });
+                                    } else {
+                                        if (response.body) {
+                                            response.body.pipe(res);
+                                        } else {
+                                            res.end();
+                                        }
+                                    }
+                                })
+                                .catch(function() {
+                                    if (!res.headersSent) res.status(503).send('Service Unavailable');
+                                });
+                        }, 1000);
+                    } else {
+                        res.status(503).send('Service Unavailable after retries');
+                    }
+                } else {
+                    res.status(502).send('Proxy Error');
+                }
             }
         });
 });
 
-app.listen(PORT, () => {
-    console.log(`TizenTwitch service running on port ${PORT}`);
+app.listen(PORT, function(err) {
+    if (err) {
+        console.error('Failed to listen on port ' + PORT + ':', err);
+    } else {
+        console.log('TizenTwitch service running on port ' + PORT);
+    }
 });
