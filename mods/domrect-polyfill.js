@@ -12,6 +12,15 @@ if (!window.DOMRect) {
             this.left = x;
         }
 
+        static fromRect(rect) {
+            return new DOMRect(
+                rect.x || 0,
+                rect.y || 0,
+                rect.width || 0,
+                rect.height || 0
+            );
+        }
+
         toJSON() {
             return {
                 x: this.x,
