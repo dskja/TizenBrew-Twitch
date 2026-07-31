@@ -122,7 +122,7 @@ function handleProxyResponse(response, req, res, targetUrl, isCorsBypass) {
             text = text.replace(/=window\.location\.href;/g, '=window.location.href.replace("http://localhost:8099", "https://www.twitch.tv");');
             text = text.replace(/=document\.location\.href/g, '=document.location.href.replace("http://localhost:8099", "https://www.twitch.tv")');
 
-            if (req.method === 'GET' && (targetUrl.includes('.js') || targetUrl.includes('.css'))) {
+            if (req.method === 'GET' && (targetUrl.indexOf('.js') !== -1 || targetUrl.indexOf('.css') !== -1)) {
                 setCached(targetUrl, text);
                 res.setHeader('X-Cache', 'MISS');
             }
@@ -154,7 +154,7 @@ app.all('*', (req, res) => {
     }
 
     // Check cache for GET requests to static assets
-    if (req.method === 'GET' && (targetUrl.includes('.js') || targetUrl.includes('.css'))) {
+    if (req.method === 'GET' && (targetUrl.indexOf('.js') !== -1 || targetUrl.indexOf('.css') !== -1)) {
         const cached = getCached(targetUrl);
         if (cached) {
             res.setHeader('X-Cache', 'HIT');

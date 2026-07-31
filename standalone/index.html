@@ -679,28 +679,32 @@
         "use strict";
 
         // Tizen key registration
-        tizen.tvinputdevice.registerKey("ColorF0Red");
-        tizen.tvinputdevice.registerKey("ColorF1Green");
-        tizen.tvinputdevice.registerKey("ColorF2Yellow");
-        tizen.tvinputdevice.registerKey("ColorF3Blue");
+        try {
+            tizen.tvinputdevice.registerKey("ColorF0Red");
+            tizen.tvinputdevice.registerKey("ColorF1Green");
+            tizen.tvinputdevice.registerKey("ColorF2Yellow");
+            tizen.tvinputdevice.registerKey("ColorF3Blue");
 
-        const keys = [
-            "MediaPlayPause",
-            "MediaPlay",
-            "MediaPause",
-            "MediaStop",
-            "MediaFastForward",
-            "MediaRewind",
-            "MediaTrackNext",
-            "MediaTrackPrevious"
-        ];
+            var keys = [
+                "MediaPlayPause",
+                "MediaPlay",
+                "MediaPause",
+                "MediaStop",
+                "MediaFastForward",
+                "MediaRewind",
+                "MediaTrackNext",
+                "MediaTrackPrevious"
+            ];
 
-        for (let i = 0; i < keys.length; i++) {
-            tizen.tvinputdevice.registerKey(keys[i]);
+            for (var i = 0; i < keys.length; i++) {
+                tizen.tvinputdevice.registerKey(keys[i]);
+            }
+        } catch (e) {
+            console.error('Failed to register Tizen keys:', e);
         }
 
         // App State
-        const state = {
+        var state = {
             settings: {
                 quality: 'auto',
                 showChat: true,
@@ -718,9 +722,14 @@
         // Load settings from local storage
         function loadSettings() {
             try {
-                const saved = localStorage.getItem('tizentwitch_settings');
+                var saved = localStorage.getItem('tizentwitch_settings');
                 if (saved) {
-                    Object.assign(state.settings, JSON.parse(saved));
+                    var parsed = JSON.parse(saved);
+                    for (var key in parsed) {
+                        if (Object.prototype.hasOwnProperty.call(parsed, key)) {
+                            state.settings[key] = parsed[key];
+                        }
+                    }
                 }
             } catch (e) {
                 console.error('Failed to load settings:', e);
@@ -747,20 +756,20 @@
         // Setup event listeners
         function setupEventListeners() {
             // Settings modal
-            document.getElementById('settings-btn').addEventListener('click', () => {
+            document.getElementById('settings-btn').addEventListener('click', function() {
                 document.getElementById('settings-modal').classList.add('active');
             });
 
-            document.getElementById('settings-close').addEventListener('click', () => {
+            document.getElementById('settings-close').addEventListener('click', function() {
                 document.getElementById('settings-modal').classList.remove('active');
             });
 
             // Help screen
-            document.getElementById('help-btn').addEventListener('click', () => {
+            document.getElementById('help-btn').addEventListener('click', function() {
                 document.getElementById('help-screen').classList.add('active');
             });
 
-            document.getElementById('help-close').addEventListener('click', () => {
+            document.getElementById('help-close').addEventListener('click', function() {
                 document.getElementById('help-screen').classList.remove('active');
             });
 
@@ -802,7 +811,7 @@
                     state.isMuted = false;
                 }
                 try {
-                    const iframe = document.getElementById('twitch-iframe');
+                    var iframe = document.getElementById('twitch-iframe');
                     if (iframe && iframe.contentWindow) {
                         iframe.contentWindow.postMessage({ type: 'setVolume', value: state.volume / 100 }, '*');
                     }
@@ -810,8 +819,6 @@
                     console.warn('Cannot set iframe volume:', e);
                 }
             });
-
-            // Sidebar navigation removed - not used in simplified UI
 
             // Search
             document.getElementById('search-input').addEventListener('keypress', function(e) {
@@ -840,8 +847,8 @@
 
         // Launch proxy service
         function launchService() {
-            const pkgId = tizen.application.getCurrentApplication().appInfo.packageId;
-            const serviceId = pkgId + ".StandaloneService";
+            var pkgId = tizen.application.getCurrentApplication().appInfo.packageId;
+            var serviceId = pkgId + ".StandaloneService";
 
             document.getElementById('loading-text').textContent = 'Starting service...';
 
@@ -849,7 +856,7 @@
                 new tizen.ApplicationControl("http://tizen.org/appcontrol/operation/service"),
                 serviceId,
                 function () {
-                    setTimeout(() => connectToProxy(), 1000);
+                    setTimeout(function() { connectToProxy(); }, 1000);
                 },
                 function (e) {
                     console.error("Launch Service failed:", e);
@@ -869,34 +876,37 @@
             
             state.retryCount++;
             
-            fetch('http://localhost:8099/tizentwitch/getState')
-                .then(r => r.json())
-                .then(res => {
-                    state.retryCount = 0; // Reset on success
+            fetch('http://localhost:8099/health')
+                .then(function(r) {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
+                .then(function(res) {
+                    state.retryCount = 0;
                     document.getElementById('loading-screen').style.display = 'none';
                     document.getElementById('app-container').style.display = 'block';
                     
                     // Load Twitch through proxy
                     loadTwitch();
                     showControls();
-                }).catch((err) => {
+                }).catch(function(err) {
                     console.error('Failed to connect to proxy service:', err);
-                    document.getElementById('loading-text').textContent = `Retrying (${state.retryCount}/${state.maxRetries})...`;
-                    setTimeout(() => connectToProxy(), 2000);
+                    document.getElementById('loading-text').textContent = 'Retrying (' + state.retryCount + '/' + state.maxRetries + ')...';
+                    setTimeout(function() { connectToProxy(); }, 2000);
                 });
         }
 
         // Load Twitch through proxy
         function loadTwitch() {
-            const iframe = document.getElementById('twitch-iframe');
-            const placeholder = document.getElementById('video-placeholder');
+            var iframe = document.getElementById('twitch-iframe');
+            var placeholder = document.getElementById('video-placeholder');
             
             iframe.src = 'http://localhost:8099/';
             iframe.style.display = 'block';
             placeholder.style.display = 'none';
             
             // Add loading timeout (30 seconds)
-            const loadTimeout = setTimeout(() => {
+            var loadTimeout = setTimeout(function() {
                 console.warn('Twitch loading timeout');
                 placeholder.style.display = 'block';
                 placeholder.innerHTML = '<div class="video-placeholder-icon">⏱️</div><div>Loading timeout. Please refresh.</div>';
@@ -946,7 +956,7 @@
                     break;
                 case 'Back':
                     if (!hideModals()) {
-                        tizen.application.getCurrentApplication().exit();
+                        try { tizen.application.getCurrentApplication().exit(); } catch (e) {}
                     }
                     break;
             }
@@ -957,7 +967,7 @@
             state.isPlaying = !state.isPlaying;
             document.getElementById('play-pause-btn').textContent = state.isPlaying ? '⏸️' : '▶️';
             try {
-                const iframe = document.getElementById('twitch-iframe');
+                var iframe = document.getElementById('twitch-iframe');
                 if (iframe && iframe.contentWindow) {
                     iframe.contentWindow.postMessage({ type: 'togglePlay' }, '*');
                 }
@@ -970,7 +980,7 @@
             state.isPlaying = false;
             document.getElementById('play-pause-btn').textContent = '▶️';
             try {
-                const iframe = document.getElementById('twitch-iframe');
+                var iframe = document.getElementById('twitch-iframe');
                 if (iframe && iframe.contentWindow) {
                     iframe.contentWindow.postMessage({ type: 'stop' }, '*');
                 }
@@ -983,7 +993,7 @@
             state.isMuted = !state.isMuted;
             document.getElementById('mute-btn').textContent = state.isMuted ? '🔇' : '🔊';
             try {
-                const iframe = document.getElementById('twitch-iframe');
+                var iframe = document.getElementById('twitch-iframe');
                 if (iframe && iframe.contentWindow) {
                     iframe.contentWindow.postMessage({ type: 'toggleMute' }, '*');
                 }
@@ -993,10 +1003,11 @@
         }
 
         function toggleFullscreen() {
-            const iframe = document.getElementById('twitch-iframe');
+            var iframe = document.getElementById('twitch-iframe');
             if (!iframe) return;
             if (document.fullscreenElement) {
-                document.exitFullscreen();
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
             } else if (iframe.requestFullscreen) {
                 iframe.requestFullscreen();
             } else if (iframe.webkitRequestFullscreen) {
@@ -1006,7 +1017,7 @@
 
         function seekForward() {
             try {
-                const iframe = document.getElementById('twitch-iframe');
+                var iframe = document.getElementById('twitch-iframe');
                 if (iframe && iframe.contentWindow) {
                     iframe.contentWindow.postMessage({ type: 'seekForward' }, '*');
                 }
@@ -1017,7 +1028,7 @@
 
         function seekBackward() {
             try {
-                const iframe = document.getElementById('twitch-iframe');
+                var iframe = document.getElementById('twitch-iframe');
                 if (iframe && iframe.contentWindow) {
                     iframe.contentWindow.postMessage({ type: 'seekBackward' }, '*');
                 }
@@ -1027,8 +1038,8 @@
         }
 
         // Channel navigation
-        const channelHistory = [];
-        let channelIndex = -1;
+        var channelHistory = [];
+        var channelIndex = -1;
 
         function nextChannel() {
             if (channelIndex < channelHistory.length - 1) {
@@ -1047,7 +1058,7 @@
         // Channel functions
         function loadChannel(channel) {
             state.currentChannel = channel;
-            const iframe = document.getElementById('twitch-iframe');
+            var iframe = document.getElementById('twitch-iframe');
             
             // Track channel history for navigation
             if (channelHistory[channelIndex] !== channel) {
@@ -1057,7 +1068,7 @@
             }
             
             // Load specific channel through proxy
-            iframe.src = `http://localhost:8099/${channel}`;
+            iframe.src = 'http://localhost:8099/' + channel;
             state.isPlaying = true;
             document.getElementById('play-pause-btn').textContent = '⏸️';
         }
@@ -1073,10 +1084,10 @@
 
         // UI functions
         function showControls() {
-            const overlay = document.getElementById('controls-overlay');
+            var overlay = document.getElementById('controls-overlay');
             overlay.classList.add('active');
             clearTimeout(state._controlsTimeout);
-            state._controlsTimeout = setTimeout(() => {
+            state._controlsTimeout = setTimeout(function() {
                 overlay.classList.remove('active');
             }, 3000);
         }
@@ -1089,8 +1100,8 @@
         });
 
         function hideModals() {
-            const settingsOpen = document.getElementById('settings-modal').classList.contains('active');
-            const helpOpen = document.getElementById('help-screen').classList.contains('active');
+            var settingsOpen = document.getElementById('settings-modal').classList.contains('active');
+            var helpOpen = document.getElementById('help-screen').classList.contains('active');
             document.getElementById('settings-modal').classList.remove('active');
             document.getElementById('help-screen').classList.remove('active');
             return settingsOpen || helpOpen;
@@ -1111,7 +1122,7 @@
             console.error('App error:', e);
             // Only reload on truly fatal errors, not minor script errors
             if (e.error && (e.error.name === 'TypeError' || e.error.name === 'ReferenceError')) {
-                setTimeout(() => {
+                setTimeout(function() {
                     window.location.reload();
                 }, 5000);
             }
