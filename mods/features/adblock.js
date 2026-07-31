@@ -9,17 +9,19 @@ const origXHRSend = XMLHttpRequest.prototype.send;
 
 // Block known Twitch ad domains
 const adDomains = [
-    'twitch.tv',
-    'ttvnw.net',
     'video-weaver.twitch.tv',
     'usher.ttvnw.net'
 ];
 
-// Block ad-related API endpoints
-const adEndpoints = [
+// Block ad-related API endpoints (specific patterns only)
+const adPatterns = [
     '/gql',
     '/api/channel',
-    '/api/ads'
+    '/api/ads',
+    '/commercial',
+    '/sponsored',
+    '/ad-macro',
+    '/ads_settings'
 ];
 
 // Override fetch to block ad requests
@@ -27,9 +29,13 @@ window.fetch = function(...args) {
     const url = args[0];
     if (typeof url === 'string') {
         for (const domain of adDomains) {
-            if (url.includes(domain) && url.includes('ad')) {
-                console.log('[TizenTwitch] Blocked ad request:', url);
-                return Promise.resolve(new Response('{}', { status: 200 }));
+            if (url.includes(domain)) {
+                for (const pattern of adPatterns) {
+                    if (url.includes(pattern)) {
+                        console.log('[TizenTwitch] Blocked ad request:', url);
+                        return Promise.resolve(new Response('{}', { status: 200 }));
+                    }
+                }
             }
         }
     }
@@ -39,8 +45,8 @@ window.fetch = function(...args) {
 // Override XMLHttpRequest to block ad requests
 XMLHttpRequest.prototype.open = function(method, url) {
     this._url = url;
-    for (const endpoint of adEndpoints) {
-        if (url.includes(endpoint) && url.includes('ad')) {
+    for (const pattern of adPatterns) {
+        if (url.includes(pattern)) {
             console.log('[TizenTwitch] Blocked XHR ad request:', url);
             this._blocked = true;
             return;

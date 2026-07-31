@@ -9,9 +9,9 @@ let chatVisible = true;
 // Toggle chat visibility
 function toggleChat() {
     chatVisible = !chatVisible;
-    const chatContainer = document.querySelector('.chat-container');
+    const chatContainer = document.querySelector('.twitch-chat-ui');
     if (chatContainer) {
-        chatContainer.style.display = chatVisible ? 'block' : 'none';
+        chatContainer.style.display = chatVisible ? 'flex' : 'none';
     }
     console.log('[TizenTwitch] Chat visibility:', chatVisible);
 }
@@ -19,9 +19,9 @@ function toggleChat() {
 // Initialize chat UI
 function initChat() {
     // Create chat container if it doesn't exist
-    if (!document.querySelector('.chat-container')) {
+    if (!document.querySelector('.twitch-chat-ui')) {
         const chatContainer = document.createElement('div');
-        chatContainer.className = 'chat-container';
+        chatContainer.className = 'twitch-chat-ui';
         chatContainer.style.cssText = `
             position: fixed;
             right: 20px;
@@ -41,7 +41,7 @@ function initChat() {
 function handleChatMessage(message) {
     if (!chatEnabled || !chatVisible) return;
     
-    const chatContainer = document.querySelector('.chat-container');
+    const chatContainer = document.querySelector('.twitch-chat-ui');
     if (!chatContainer) return;
 
     const messageElement = document.createElement('div');

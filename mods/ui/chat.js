@@ -163,4 +163,4 @@ style.textContent = `
         border-radius: 4px;
     }
 `;
-document.head.appendChild(style);
+document.head && document.head.appendChild(style);

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<widget xmlns:tizen="http://tizen.org/ns/widgets" xmlns="http://www.w3.org/ns/widgets" id="https://tizentwitch.app" version="1.0.0" viewmodes="maximized">
+<widget xmlns:tizen="http://tizen.org/ns/widgets" xmlns="http://www.w3.org/ns/widgets" id="https://tizentwitch.app" version="2.0.4" viewmodes="maximized">
     <access origin="*" subdomains="true"></access>
     <tizen:allow-navigation href="*"/>
     <tizen:application id="xvvl3S1TT1.TizenTwitch" package="xvvl3S1TT1" required_version="3.0"/>
@@ -29,7 +29,7 @@
     <tizen:privilege name="http://tizen.org/privilege/application.launch"/>
     <tizen:profile name="tv-samsung"/>
     <tizen:service id="xvvl3S1TT1.StandaloneService">
-        <tizen:content src="service/dist/index.js"/>
+        <tizen:content src="service/dist/service.js"/>
         <tizen:name>StandaloneService</tizen:name>
         <tizen:description>StandaloneService</tizen:description>
     </tizen:service>
