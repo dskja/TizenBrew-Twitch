@@ -2,6 +2,7 @@ import { babel } from '@rollup/plugin-babel';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import replace from '@rollup/plugin-replace';
+import json from '@rollup/plugin-json';
 
 export default {
   input: 'service.js',
@@ -16,12 +17,13 @@ export default {
       preferBuiltins: true
     }),
     commonjs(),
+    json(),
     replace({
       'process.env.NODE_ENV': JSON.stringify('production')
     }),
     babel({
       babelHelpers: 'bundled',
-      presets: ['@babel/preset-env']
+      presets: [['@babel/preset-env', { targets: { node: '4.4.3' } }]]
     })
   ]
 };

@@ -21,7 +21,7 @@ export default {
     }),
     babel({
       babelHelpers: 'bundled',
-      presets: ['@babel/preset-env']
+      presets: [['@babel/preset-env', { targets: { chrome: '47', node: '4.4.3' } }]]
     }),
     terser()
   ]

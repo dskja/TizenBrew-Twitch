@@ -8,7 +8,7 @@
   "main": "dist/userScript.js",
   "standalone": "standalone/index.html",
   "author": "dskja",
-  "serviceFile": "standalone/service/index.js",
+  "serviceFile": "service/dist/service.js",
   "keys": [
     "MediaPlayPause",
     "MediaPlay",

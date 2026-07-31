@@ -11,8 +11,6 @@
   "author": "dskja",
   "license": "GPL-3.0-only",
   "dependencies": {
-    "@babel/preset-env": "^7.22.9",
-    "@rollup/plugin-babel": "^6.0.3",
     "@rollup/plugin-terser": "^0.4.3",
     "core-js": "^3.46.0",
     "rollup": "^3.26.2",
@@ -20,6 +18,8 @@
     "whatwg-fetch": "^3.6.2"
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.22.9",
+    "@rollup/plugin-babel": "^6.0.3",
     "@rollup/plugin-commonjs": "^29.0.0",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
