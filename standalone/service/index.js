@@ -163,17 +163,17 @@ app.all('*', (req, res) => {
                     const proxyPrefix = `http://localhost:${PORT}/cors-bypass/`;
 
                     // Optimized URL rewriting with single pass
-                    const domainReplacements = [
-                        ['static.twitchcdn.net', 'static.twitchcdn.net'],
-                        ['player.twitchcdn.net', 'player.twitchcdn.net'],
-                        ['usher.twitchcdn.net', 'usher.twitchcdn.net'],
-                        ['video-weaver.twitchcdn.net', 'video-weaver.twitchcdn.net'],
-                        ['gql.twitchcdn.net', 'gql.twitchcdn.net'],
-                        ['passport.twitchcdn.net', 'passport.twitchcdn.net']
+                    const domainsToRewrite = [
+                        'static.twitchcdn.net',
+                        'player.twitchcdn.net',
+                        'usher.twitchcdn.net',
+                        'video-weaver.twitchcdn.net',
+                        'gql.twitchcdn.net',
+                        'passport.twitchcdn.net'
                     ];
 
-                    for (const [domain, replacement] of domainReplacements) {
-                        text = text.replace(new RegExp(`https://${domain}`, 'g'), `${proxyPrefix}https://${replacement}`);
+                    for (const domain of domainsToRewrite) {
+                        text = text.replace(new RegExp(`https://${domain}`, 'g'), `${proxyPrefix}https://${domain}`);
                     }
 
                     // Fix location references
