@@ -6,14 +6,14 @@ import replace from '@rollup/plugin-replace';
 export default {
   input: 'index.js',
   output: {
-    file: 'dist/index.js',
+    file: 'dist/service.js',
     format: 'cjs',
     name: 'TizenTwitchService'
   },
   plugins: [
     resolve({
-      browser: true,
-      preferBuiltins: false
+      browser: false,
+      preferBuiltins: true
     }),
     commonjs(),
     replace({

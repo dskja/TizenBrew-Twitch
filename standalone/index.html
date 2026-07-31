@@ -937,7 +937,9 @@
                     document.getElementById('help-screen').classList.add('active');
                     break;
                 case 'Back':
-                    hideModals();
+                    if (!hideModals()) {
+                        tizen.application.getCurrentApplication().exit();
+                    }
                     break;
             }
         }
@@ -991,7 +993,10 @@
 
         function searchChannel(query) {
             if (query) {
-                loadChannel(query);
+                query = query.trim().replace(/^@/, '');
+                if (query) {
+                    loadChannel(query);
+                }
             }
         }
 
@@ -1004,8 +1009,11 @@
         }
 
         function hideModals() {
+            const settingsOpen = document.getElementById('settings-modal').classList.contains('active');
+            const helpOpen = document.getElementById('help-screen').classList.contains('active');
             document.getElementById('settings-modal').classList.remove('active');
             document.getElementById('help-screen').classList.remove('active');
+            return settingsOpen || helpOpen;
         }
 
         function showError(message) {
@@ -1018,12 +1026,15 @@
             connectToProxy();
         }
 
-        // Auto-restart on crash
+        // Auto-restart on crash (only for uncaught type errors, not all errors)
         window.addEventListener('error', function(e) {
             console.error('App error:', e);
-            setTimeout(() => {
-                window.location.reload();
-            }, 5000);
+            // Only reload on truly fatal errors, not minor script errors
+            if (e.error && (e.error.name === 'TypeError' || e.error.name === 'ReferenceError')) {
+                setTimeout(() => {
+                    window.location.reload();
+                }, 5000);
+            }
         });
 
         // Start app
