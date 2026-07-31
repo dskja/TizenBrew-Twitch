@@ -56,14 +56,14 @@ app.get('/tizentwitch/getState', (req, res) => {
 });
 
 app.all('*', (req, res) => {
-    const isCorsBypass = req.path.indexOf('/cors-bypass/') === 0;
+    const isCorsBypass = req.url.indexOf('/cors-bypass/') === 0;
 
     let targetUrl;
     if (isCorsBypass) {
-        const rawTarget = req.path.substring('/cors-bypass/'.length);
+        const rawTarget = req.url.substring('/cors-bypass/'.length);
         targetUrl = rawTarget.indexOf('http') === 0 ? rawTarget : `https://${rawTarget}`;
     } else {
-        targetUrl = `https://www.twitch.tv${req.path}`;
+        targetUrl = `https://www.twitch.tv${req.url}`;
     }
 
     // Check cache for GET requests to static assets
