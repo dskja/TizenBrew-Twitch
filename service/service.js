@@ -3,7 +3,28 @@ const cors = require('cors');
 const fetch = require('node-fetch');
 
 const app = express();
-const PORT = 8086;
+const PORT = 8099;
+
+// Simple in-memory cache
+const cache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCached(url) {
+    const cached = cache.get(url);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        return cached.data;
+    }
+    cache.delete(url);
+    return null;
+}
+
+function setCached(url, data) {
+    cache.set(url, { data, timestamp: Date.now() });
+    if (cache.size > 1000) {
+        const oldestKey = cache.keys().next().value;
+        cache.delete(oldestKey);
+    }
+}
 
 app.use(cors({
     origin: '*',
@@ -37,9 +58,11 @@ app.all('*', (req, res) => {
     for (const key in req.headers) {
         if (Object.prototype.hasOwnProperty.call(req.headers, key)) {
             if (key === 'cookie') {
-                headers[key] = req.headers[key]
-                    .replace(/__LocalSecure-/g, '__Secure-')
-                    .replace(/__LocalHost-/g, '__Host-');
+                if (req.headers[key]) {
+                    headers[key] = req.headers[key]
+                        .replace(/__LocalSecure-/g, '__Secure-')
+                        .replace(/__LocalHost-/g, '__Host-');
+                }
                 continue;
             }
             headers[key] = req.headers[key];
@@ -59,12 +82,34 @@ app.all('*', (req, res) => {
     }
 
     const hasBody = ['POST', 'PUT', 'PATCH'].includes(req.method);
+    const contentType = req.headers['content-type'] || '';
+    let body = undefined;
+    if (hasBody) {
+        if (contentType.indexOf('application/json') !== -1) {
+            body = JSON.stringify(req.body);
+        } else if (contentType.indexOf('application/x-www-form-urlencoded') !== -1) {
+            body = new URLSearchParams(req.body).toString();
+            headers['content-type'] = 'application/x-www-form-urlencoded';
+        } else {
+            body = JSON.stringify(req.body);
+        }
+    }
     const fetchOptions = {
         method: req.method,
         headers: headers,
-        body: hasBody ? JSON.stringify(req.body) : undefined,
+        body: body,
         redirect: 'manual'
     };
+
+    // Check cache for GET requests to static assets
+    if (req.method === 'GET' && (targetUrl.includes('.js') || targetUrl.includes('.css') || targetUrl.includes('.png') || targetUrl.includes('.jpg') || targetUrl.includes('.svg'))) {
+        const cached = getCached(targetUrl);
+        if (cached) {
+            res.setHeader('X-Cache', 'HIT');
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            return res.send(cached);
+        }
+    }
 
     fetch(targetUrl, fetchOptions)
         .then(response => {
@@ -73,7 +118,9 @@ app.all('*', (req, res) => {
             for (const key in headerKeys) {
                 if (Object.prototype.hasOwnProperty.call(headerKeys, key)) {
                     const lowerKey = key.toLowerCase();
-                    if (['content-encoding', 'content-length', 'transfer-encoding', 'content-security-policy', 'alt-svc'].includes(lowerKey)) continue;
+                    const skipHeaders = ['content-encoding', 'content-length', 'transfer-encoding', 'content-security-policy', 'alt-svc'];
+                    if (req.url.indexOf('/cors-bypass/') === 0) skipHeaders.push('access-control-allow-origin');
+                    if (skipHeaders.includes(lowerKey)) continue;
                     if (lowerKey === 'set-cookie') {
                         const rawCookies = headerKeys[key];
                         if (Array.isArray(rawCookies)) {
@@ -91,10 +138,44 @@ app.all('*', (req, res) => {
                 }
             }
             res.setHeader('Access-Control-Allow-Origin', '*');
-            if (response.body) {
-                response.body.pipe(res);
+
+            const respContentType = response.headers.get('content-type') || '';
+
+            if (respContentType.indexOf('text/html') !== -1 ||
+                respContentType.indexOf('application/json') !== -1 ||
+                respContentType.indexOf('javascript') !== -1 ||
+                respContentType.indexOf('text/css') !== -1) {
+
+                return response.text().then(text => {
+                    const proxyPrefix = `http://localhost:${PORT}/cors-bypass/`;
+                    const domainsToRewrite = [
+                        'static.twitchcdn.net',
+                        'player.twitchcdn.net',
+                        'usher.twitchcdn.net',
+                        'video-weaver.twitchcdn.net',
+                        'gql.twitchcdn.net',
+                        'passport.twitchcdn.net'
+                    ];
+                    for (const domain of domainsToRewrite) {
+                        text = text.replace(new RegExp(`https://${domain}`, 'g'), `${proxyPrefix}https://${domain}`);
+                    }
+                    // Cache static assets
+                    if (req.method === 'GET' && (targetUrl.includes('.js') || targetUrl.includes('.css'))) {
+                        setCached(targetUrl, text);
+                        res.setHeader('X-Cache', 'MISS');
+                    }
+                    res.send(text);
+                });
             } else {
-                res.end();
+                if (response.body) {
+                    if (respContentType.includes('video') || respContentType.includes('stream')) {
+                        res.setHeader('Cache-Control', 'no-cache');
+                        res.setHeader('Connection', 'keep-alive');
+                    }
+                    response.body.pipe(res);
+                } else {
+                    res.end();
+                }
             }
         })
         .catch(error => {

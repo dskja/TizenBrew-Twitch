@@ -67,7 +67,7 @@ app.all('*', (req, res) => {
     }
 
     // Check cache for GET requests to static assets
-    if (req.method === 'GET' && (targetUrl.includes('.js') || targetUrl.includes('.css') || targetUrl.includes('.png') || targetUrl.includes('.jpg') || targetUrl.includes('.svg'))) {
+    if (req.method === 'GET' && (targetUrl.includes('.js') || targetUrl.includes('.css'))) {
         const cached = getCached(targetUrl);
         if (cached) {
             res.setHeader('X-Cache', 'HIT');
@@ -100,7 +100,7 @@ app.all('*', (req, res) => {
         headers['referer'] = 'https://www.twitch.tv';
     }
 
-    headers['accept-encoding'] = 'gzip, deflate';
+    headers['accept-encoding'] = 'identity';
 
     const hasBody = ['POST', 'PUT', 'PATCH'].indexOf(req.method) !== -1;
     const fetchOptions = {
@@ -206,36 +206,41 @@ app.all('*', (req, res) => {
             console.error(`Proxy Error for [${targetUrl}]: ${error}`);
             console.error(error.stack)
             
-            // Improved error recovery
+            // Improved error recovery with retry limit
             if (!res.headersSent) {
                 if (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET') {
-                    // Retry on network errors
-                    console.log(`Retrying request to ${targetUrl}`);
-                    setTimeout(() => {
-                        fetch(targetUrl, fetchOptions)
-                            .then(response => {
-                                res.status(response.status);
-                                const headerKeys = response.headers.raw();
-                                for (const key in headerKeys) {
-                                    if (Object.prototype.hasOwnProperty.call(headerKeys, key)) {
-                                        const lowerKey = key.toLowerCase();
-                                        const skipHeaders = ['content-encoding', 'content-length', 'transfer-encoding', 'content-security-policy', 'alt-svc'];
-                                        if (isCorsBypass) skipHeaders.push('access-control-allow-origin');
-                                        if (skipHeaders.indexOf(lowerKey) !== -1) continue;
-                                        res.setHeader(key, response.headers.get(key));
+                    const retryCount = (req._retryCount || 0) + 1;
+                    req._retryCount = retryCount;
+                    if (retryCount <= 3) {
+                        console.log(`Retrying request to ${targetUrl} (attempt ${retryCount}/3)`);
+                        setTimeout(() => {
+                            fetch(targetUrl, fetchOptions)
+                                .then(response => {
+                                    res.status(response.status);
+                                    const headerKeys = response.headers.raw();
+                                    for (const key in headerKeys) {
+                                        if (Object.prototype.hasOwnProperty.call(headerKeys, key)) {
+                                            const lowerKey = key.toLowerCase();
+                                            const skipHeaders = ['content-encoding', 'content-length', 'transfer-encoding', 'content-security-policy', 'alt-svc'];
+                                            if (isCorsBypass) skipHeaders.push('access-control-allow-origin');
+                                            if (skipHeaders.indexOf(lowerKey) !== -1) continue;
+                                            res.setHeader(key, response.headers.get(key));
+                                        }
                                     }
-                                }
-                                res.setHeader('Access-Control-Allow-Origin', '*');
-                                if (response.body) {
-                                    response.body.pipe(res);
-                                } else {
-                                    res.end();
-                                }
-                            })
-                            .catch(() => {
-                                res.status(503).send('Service Unavailable');
-                            });
-                    }, 1000);
+                                    res.setHeader('Access-Control-Allow-Origin', '*');
+                                    if (response.body) {
+                                        response.body.pipe(res);
+                                    } else {
+                                        res.end();
+                                    }
+                                })
+                                .catch(() => {
+                                    res.status(503).send('Service Unavailable');
+                                });
+                        }, 1000);
+                    } else {
+                        res.status(503).send('Service Unavailable after retries');
+                    }
                 } else {
                     res.status(500).send('Proxy Connection Broken');
                 }

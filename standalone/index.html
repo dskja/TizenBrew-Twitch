@@ -801,6 +801,14 @@
                 if (state.volume > 0) {
                     state.isMuted = false;
                 }
+                try {
+                    const iframe = document.getElementById('twitch-iframe');
+                    if (iframe && iframe.contentWindow) {
+                        iframe.contentWindow.postMessage({ type: 'setVolume', value: state.volume / 100 }, '*');
+                    }
+                } catch (e) {
+                    console.warn('Cannot set iframe volume:', e);
+                }
             });
 
             // Sidebar navigation removed - not used in simplified UI
@@ -948,42 +956,105 @@
         function togglePlayPause() {
             state.isPlaying = !state.isPlaying;
             document.getElementById('play-pause-btn').textContent = state.isPlaying ? '⏸️' : '▶️';
+            try {
+                const iframe = document.getElementById('twitch-iframe');
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({ type: 'togglePlay' }, '*');
+                }
+            } catch (e) {
+                console.warn('Cannot control iframe playback:', e);
+            }
         }
 
         function stopPlayback() {
             state.isPlaying = false;
             document.getElementById('play-pause-btn').textContent = '▶️';
+            try {
+                const iframe = document.getElementById('twitch-iframe');
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({ type: 'stop' }, '*');
+                }
+            } catch (e) {
+                console.warn('Cannot control iframe playback:', e);
+            }
         }
 
         function toggleMute() {
             state.isMuted = !state.isMuted;
             document.getElementById('mute-btn').textContent = state.isMuted ? '🔇' : '🔊';
+            try {
+                const iframe = document.getElementById('twitch-iframe');
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({ type: 'toggleMute' }, '*');
+                }
+            } catch (e) {
+                console.warn('Cannot control iframe mute:', e);
+            }
         }
 
         function toggleFullscreen() {
-            // Fullscreen handling
+            const iframe = document.getElementById('twitch-iframe');
+            if (!iframe) return;
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else if (iframe.requestFullscreen) {
+                iframe.requestFullscreen();
+            } else if (iframe.webkitRequestFullscreen) {
+                iframe.webkitRequestFullscreen();
+            }
         }
 
         function seekForward() {
-            console.log('Seek forward');
+            try {
+                const iframe = document.getElementById('twitch-iframe');
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({ type: 'seekForward' }, '*');
+                }
+            } catch (e) {
+                console.warn('Cannot seek in iframe:', e);
+            }
         }
 
         function seekBackward() {
-            console.log('Seek backward');
+            try {
+                const iframe = document.getElementById('twitch-iframe');
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({ type: 'seekBackward' }, '*');
+                }
+            } catch (e) {
+                console.warn('Cannot seek in iframe:', e);
+            }
         }
 
+        // Channel navigation
+        const channelHistory = [];
+        let channelIndex = -1;
+
         function nextChannel() {
-            console.log('Next channel');
+            if (channelIndex < channelHistory.length - 1) {
+                channelIndex++;
+                loadChannel(channelHistory[channelIndex]);
+            }
         }
 
         function previousChannel() {
-            console.log('Previous channel');
+            if (channelIndex > 0) {
+                channelIndex--;
+                loadChannel(channelHistory[channelIndex]);
+            }
         }
 
         // Channel functions
         function loadChannel(channel) {
             state.currentChannel = channel;
             const iframe = document.getElementById('twitch-iframe');
+            
+            // Track channel history for navigation
+            if (channelHistory[channelIndex] !== channel) {
+                channelHistory.length = channelIndex + 1;
+                channelHistory.push(channel);
+                channelIndex = channelHistory.length - 1;
+            }
             
             // Load specific channel through proxy
             iframe.src = `http://localhost:8099/${channel}`;
@@ -1002,11 +1073,20 @@
 
         // UI functions
         function showControls() {
-            document.getElementById('controls-overlay').classList.add('active');
-            setTimeout(() => {
-                document.getElementById('controls-overlay').classList.remove('active');
+            const overlay = document.getElementById('controls-overlay');
+            overlay.classList.add('active');
+            clearTimeout(state._controlsTimeout);
+            state._controlsTimeout = setTimeout(() => {
+                overlay.classList.remove('active');
             }, 3000);
         }
+
+        // Re-show controls on any key press or movement
+        document.addEventListener('keydown', function(e) {
+            if (e.key !== 'Back') {
+                showControls();
+            }
+        });
 
         function hideModals() {
             const settingsOpen = document.getElementById('settings-modal').classList.contains('active');

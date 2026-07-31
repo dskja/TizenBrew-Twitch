@@ -1,8 +1,8 @@
 {
   "name": "tizentwitch",
   "appName": "TizenTwitch",
-  "version": "2.0.5",
-  "description": "TizenTwitch 2.0.5 - Massive update with fixed URL rewriting, query string preservation, rollup config, and UI improvements.",
+  "version": "2.1.0",
+  "description": "TizenTwitch 2.1.0 - Fixed service port, cookie null check, body handling, URL rewriting, caching, chat integration, playback controls, retry limits, and reisxd references.",
   "packageType": "mods",
   "websiteURL": "https://www.twitch.tv",
   "main": "dist/userScript.js",

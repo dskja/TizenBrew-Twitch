@@ -11,7 +11,7 @@ A Twitch viewer module for TizenBrew with ad blocking and chat support for Samsu
 
 ## Installation
 
-1. Install TizenBrew from [here](https://github.com/reisxd/TizenBrew)
+1. Install TizenBrew from [here](https://github.com/dskja/TizenBrew)
 2. Add `@dskja/tizentwitch` as a NPM module in TizenBrew module manager
 3. Navigate to Twitch on your TV
 4. The module will automatically load and enhance your Twitch experience
@@ -38,4 +38,4 @@ GPL-3.0-only
 
 ## Credits
 
-Based on [TizenTube](https://github.com/reisxd/TizenTube) by Reis Can
+Based on [TizenTube](https://github.com/dskja/TizenTube) by Reis Can

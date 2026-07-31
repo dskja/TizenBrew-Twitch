@@ -1,6 +1,6 @@
 {
   "name": "service",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "type": "module",
   "main": "service.js",
   "scripts": {
@@ -8,9 +8,9 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
+  "author": "dskja",
   "license": "GPL-3.0-only",
-  "description": "",
+  "description": "TizenTwitch module proxy service",
   "dependencies": {
     "@patrickkfkan/peer-dial": "^0.1.2",
     "cors": "^2.8.5",

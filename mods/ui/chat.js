@@ -92,6 +92,40 @@ export function createChatUI() {
         chatUI.style.display = 'none';
     });
 
+    // Add animation styles (only when UI is created)
+    if (!document.querySelector('#tizenTwitch-chat-styles')) {
+        const style = document.createElement('style');
+        style.id = 'tizenTwitch-chat-styles';
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateX(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+            }
+
+            .chat-messages::-webkit-scrollbar {
+                width: 8px;
+            }
+
+            .chat-messages::-webkit-scrollbar-track {
+                background: #1f1f23;
+            }
+
+            .chat-messages::-webkit-scrollbar-thumb {
+                background: #9146ff;
+                border-radius: 4px;
+            }
+        `;
+        if (document.head) {
+            document.head.appendChild(style);
+        }
+    }
+
     return chatUI;
 }
 
@@ -135,32 +169,3 @@ export function addChatMessage(username, message, color = '#ffffff') {
         messagesContainer.removeChild(messagesContainer.firstChild);
     }
 }
-
-// Add animation styles
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from {
-            opacity: 0;
-            transform: translateX(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
-    
-    .chat-messages::-webkit-scrollbar {
-        width: 8px;
-    }
-    
-    .chat-messages::-webkit-scrollbar-track {
-        background: #1f1f23;
-    }
-    
-    .chat-messages::-webkit-scrollbar-thumb {
-        background: #9146ff;
-        border-radius: 4px;
-    }
-`;
-document.head && document.head.appendChild(style);
