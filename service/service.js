@@ -26,9 +26,9 @@ app.get('/health', (req, res) => {
 // Proxy for Twitch requests
 app.all('*', (req, res) => {
     let targetUrl;
-    if (req.path.startsWith('/cors-bypass/')) {
-        const rawTarget = req.path.substring('/cors-bypass/'.length);
-        targetUrl = rawTarget.startsWith('http') ? rawTarget : `https://${rawTarget}`;
+    if (req.url.indexOf('/cors-bypass/') === 0) {
+        const rawTarget = req.url.substring('/cors-bypass/'.length);
+        targetUrl = rawTarget.indexOf('http') === 0 ? rawTarget : `https://${rawTarget}`;
     } else {
         targetUrl = `https://www.twitch.tv${req.url}`;
     }

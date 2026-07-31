@@ -23,7 +23,9 @@ export function applyTwitchTheme() {
             --text-color: var(--twitch-light);
         }
     `;
-    document.head.appendChild(style);
+    if (document.head) {
+        document.head.appendChild(style);
+    }
     console.log('[TizenTwitch] Twitch theme applied');
 }
 

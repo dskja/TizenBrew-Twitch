@@ -45,11 +45,17 @@ window.fetch = function(...args) {
 // Override XMLHttpRequest to block ad requests
 XMLHttpRequest.prototype.open = function(method, url) {
     this._url = url;
-    for (const pattern of adPatterns) {
-        if (url.includes(pattern)) {
-            console.log('[TizenTwitch] Blocked XHR ad request:', url);
-            this._blocked = true;
-            return;
+    if (typeof url === 'string') {
+        for (const domain of adDomains) {
+            if (url.includes(domain)) {
+                for (const pattern of adPatterns) {
+                    if (url.includes(pattern)) {
+                        console.log('[TizenTwitch] Blocked XHR ad request:', url);
+                        this._blocked = true;
+                        return;
+                    }
+                }
+            }
         }
     }
     return origXHR.apply(this, arguments);
