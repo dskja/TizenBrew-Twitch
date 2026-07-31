@@ -81,7 +81,7 @@ app.all('*', (req, res) => {
         headers['referer'] = 'https://www.twitch.tv';
     }
 
-    const hasBody = ['POST', 'PUT', 'PATCH'].includes(req.method);
+    const hasBody = ['POST', 'PUT', 'PATCH'].indexOf(req.method) !== -1;
     const contentType = req.headers['content-type'] || '';
     let body = undefined;
     if (hasBody) {
@@ -102,7 +102,7 @@ app.all('*', (req, res) => {
     };
 
     // Check cache for GET requests to static assets
-    if (req.method === 'GET' && (targetUrl.includes('.js') || targetUrl.includes('.css') || targetUrl.includes('.png') || targetUrl.includes('.jpg') || targetUrl.includes('.svg'))) {
+    if (req.method === 'GET' && (targetUrl.indexOf('.js') !== -1 || targetUrl.indexOf('.css') !== -1 || targetUrl.indexOf('.png') !== -1 || targetUrl.indexOf('.jpg') !== -1 || targetUrl.indexOf('.svg') !== -1)) {
         const cached = getCached(targetUrl);
         if (cached) {
             res.setHeader('X-Cache', 'HIT');
@@ -120,7 +120,7 @@ app.all('*', (req, res) => {
                     const lowerKey = key.toLowerCase();
                     const skipHeaders = ['content-encoding', 'content-length', 'transfer-encoding', 'content-security-policy', 'alt-svc'];
                     if (req.url.indexOf('/cors-bypass/') === 0) skipHeaders.push('access-control-allow-origin');
-                    if (skipHeaders.includes(lowerKey)) continue;
+                    if (skipHeaders.indexOf(lowerKey) !== -1) continue;
                     if (lowerKey === 'set-cookie') {
                         const rawCookies = headerKeys[key];
                         if (Array.isArray(rawCookies)) {
@@ -159,8 +159,10 @@ app.all('*', (req, res) => {
                     for (const domain of domainsToRewrite) {
                         text = text.replace(new RegExp(`https://${domain}`, 'g'), `${proxyPrefix}https://${domain}`);
                     }
+                    text = text.replace(/=window\.location\.href;/g, '=window.location.href.replace("http://localhost:8099", "https://www.twitch.tv");');
+                    text = text.replace(/=document\.location\.href/g, '=document.location.href.replace("http://localhost:8099", "https://www.twitch.tv")');
                     // Cache static assets
-                    if (req.method === 'GET' && (targetUrl.includes('.js') || targetUrl.includes('.css'))) {
+                    if (req.method === 'GET' && (targetUrl.indexOf('.js') !== -1 || targetUrl.indexOf('.css') !== -1)) {
                         setCached(targetUrl, text);
                         res.setHeader('X-Cache', 'MISS');
                     }
@@ -168,7 +170,7 @@ app.all('*', (req, res) => {
                 });
             } else {
                 if (response.body) {
-                    if (respContentType.includes('video') || respContentType.includes('stream')) {
+                    if (respContentType.indexOf('video') !== -1 || respContentType.indexOf('stream') !== -1) {
                         res.setHeader('Cache-Control', 'no-cache');
                         res.setHeader('Connection', 'keep-alive');
                     }
