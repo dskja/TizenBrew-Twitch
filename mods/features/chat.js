@@ -11,7 +11,7 @@ let chatUI = null;
 
 export function toggleChat() {
     chatVisible = !chatVisible;
-    if (chatUI) {
+    if (chatUI && chatUI.style) {
         chatUI.style.display = chatVisible ? 'flex' : 'none';
     }
     console.log('[TizenTwitch] Chat visibility:', chatVisible);
