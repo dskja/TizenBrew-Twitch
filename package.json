@@ -1,8 +1,8 @@
 {
   "name": "tizentwitch",
   "appName": "TizenTwitch",
-  "version": "2.1.0",
-  "description": "TizenTwitch 2.1.0 - Fixed service port, cookie null check, body handling, URL rewriting, caching, chat integration, playback controls, retry limits, and reisxd references.",
+  "version": "3.0.0",
+  "description": "TizenTwitch 3.0.0 - Massive update: enhanced ad blocking with MutationObserver, playback controls (play/pause/seek/volume/mute/fullscreen/quality), stream info overlay, settings panel with toggle switches, Twitch theme, chat overlay with positioning, CORS bypass proxy with caching and retry.",
   "packageType": "mods",
   "websiteURL": "https://www.twitch.tv",
   "main": "dist/userScript.js",
@@ -17,7 +17,11 @@
     "MediaFastForward",
     "MediaRewind",
     "MediaTrackNext",
-    "MediaTrackPrevious"
+    "MediaTrackPrevious",
+    "ColorF0Red",
+    "ColorF1Green",
+    "ColorF2Yellow",
+    "ColorF3Blue"
   ],
   "repository": {
     "url": "https://github.com/dskja/TizenBrew-Twitch"
