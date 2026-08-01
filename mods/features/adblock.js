@@ -1,19 +1,21 @@
 /**
  * Twitch Ad Blocker
  * Blocks Twitch ads by intercepting and removing ad-related requests and elements
+ * Enhanced version with MutationObserver and broader ad domain blocking
  */
 
 const origFetch = window.fetch;
 const origXHR = XMLHttpRequest.prototype.open;
 const origXHRSend = XMLHttpRequest.prototype.send;
 
-// Block known Twitch ad domains
 const adDomains = [
     'video-weaver.twitch.tv',
-    'usher.ttvnw.net'
+    'usher.ttvnw.net',
+    'ads.twitch.tv',
+    'ad.twitch.tv',
+    'countess.twitch.tv'
 ];
 
-// Block ad-related API endpoints (specific patterns only)
 const adPatterns = [
     '/gql',
     '/api/channel',
@@ -21,10 +23,32 @@ const adPatterns = [
     '/commercial',
     '/sponsored',
     '/ad-macro',
-    '/ads_settings'
+    '/ads_settings',
+    '/ad_serving',
+    '/doubleclick',
+    '/google_ads',
+    '/adsystem',
+    '/adservice'
 ];
 
-// Override fetch to block ad requests
+const adElementSelectors = [
+    '[data-a-target="video-ad"]',
+    '[data-test-selector="video-ad"]',
+    '[data-a-target="ads-ad"]',
+    '.ad-banner',
+    '.player-ad',
+    '.ad-overlay',
+    '.commercial-overlay',
+    '[data-a-target="ads-ad-container"]',
+    '.spike-screen',
+    '[data-a-target="squad-stream-ad"]',
+    '[data-test-selector="ad-banner"]',
+    '.tw-ad-banner',
+    '[data-a-target="ad-unit"]',
+    'div[class*="ad-"]',
+    'div[id*="ad-"]'
+];
+
 window.fetch = function() {
     var url = arguments[0];
     if (typeof url === 'string') {
@@ -42,7 +66,6 @@ window.fetch = function() {
     return origFetch.apply(this, arguments);
 };
 
-// Override XMLHttpRequest to block ad requests
 XMLHttpRequest.prototype.open = function(method, url) {
     this._url = url;
     if (typeof url === 'string') {
@@ -68,31 +91,41 @@ XMLHttpRequest.prototype.send = function() {
     return origXHRSend.apply(this, arguments);
 };
 
-// Remove ad elements from DOM
 function removeAdElements() {
-    const adSelectors = [
-        '[data-a-target="video-ad"]',
-        '[data-test-selector="video-ad"]',
-        '.ad-banner',
-        '.player-ad',
-        '.ad-overlay',
-        '.commercial-overlay'
-    ];
-
-    adSelectors.forEach(function(selector) {
-        var elements = document.querySelectorAll(selector);
-        for (var i = 0; i < elements.length; i++) {
-            console.log('[TizenTwitch] Removed ad element:', selector);
-            if (elements[i].parentNode) elements[i].parentNode.removeChild(elements[i]);
-        }
+    adElementSelectors.forEach(function(selector) {
+        try {
+            var elements = document.querySelectorAll(selector);
+            for (var i = 0; i < elements.length; i++) {
+                if (elements[i].parentNode) elements[i].parentNode.removeChild(elements[i]);
+            }
+        } catch (e) {}
     });
 }
 
-// Run periodically to catch dynamically loaded ads, with auto-stop after 60s
-var adRemovalInterval = setInterval(removeAdElements, 2000);
-setTimeout(function() { clearInterval(adRemovalInterval); }, 60000);
+var observer = null;
+function setupObserver() {
+    if (observer) observer.disconnect();
+    observer = new MutationObserver(function(mutations) {
+        for (var i = 0; i < mutations.length; i++) {
+            if (mutations[i].addedNodes && mutations[i].addedNodes.length > 0) {
+                removeAdElements();
+                break;
+            }
+        }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+}
 
-// Initial cleanup
+var adRemovalInterval = setInterval(removeAdElements, 2000);
+setTimeout(function() { clearInterval(adRemovalInterval); }, 120000);
+
 removeAdElements();
 
-console.log('[TizenTwitch] Ad blocker initialized');
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupObserver);
+} else {
+    setupObserver();
+}
+
+console.log('[TizenTwitch] Enhanced ad blocker initialized');
+
