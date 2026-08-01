@@ -1,7 +1,7 @@
 {
   "name": "tizentwitch",
   "appName": "TizenTwitch",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "TizenTwitch 3.0.0 - Massive update: enhanced ad blocking with MutationObserver, playback controls (play/pause/seek/volume/mute/fullscreen/quality), stream info overlay, settings panel with toggle switches, Twitch theme, chat overlay with positioning, CORS bypass proxy with caching and retry.",
   "packageType": "mods",
   "websiteURL": "https://www.twitch.tv",

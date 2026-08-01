@@ -1,6 +1,6 @@
 {
   "name": "@tizentwitch/mods",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "TizenTwitch mods 3.0 - Enhanced ad blocking, chat overlay, playback controls, stream info, settings panel, and Twitch theme for Tizen TVs",
   "main": "index.js",
   "type": "module",
