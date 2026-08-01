@@ -1,5 +1,8 @@
 import "./features/adblock.js";
 import "./features/chat.js";
+import "./features/playback.js";
+import "./features/streamInfo.js";
+import "./features/settings.js";
 import "./ui/chat.js";
 import "./ui/theme.js";
 import "whatwg-fetch";
